@@ -11,45 +11,48 @@ class Controller {
   }
 
   static async getViewers(req, res) {
-    let attempts = 0;
-    const maxAttempts = 3;
-    while (attempts < maxAttempts) {
-      try {
-        const apiKey = process.env.FLICKR_API_KEY;
-        const url = `https://www.flickr.com/services/rest/?method=flickr.photos.search&api_key=${apiKey}&user_id=200984113%40N02&tags=&format=json&nojsoncallback=1&api_sig=3713a40c6cf6dba08be3f183407f36a5`;
+    try {
+      const url = `https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1`;
 
-        const response = await axios.get(url);
-        return res.status(200).json(response.data);
-      } catch (error) {
-        if (error.response && error.response.status === 429) {
-          attempts++;
-          const retryAfter =
-            (error.response.headers["retry-after"] || 1) * 1000;
-          await new Promise((resolve) => setTimeout(resolve, retryAfter));
-        } else {
-          console.log("Error fetching data:", error.message);
-          return res.status(500).json({ error: error.message });
-        }
-      }
+      const response = await axios.get(url, {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "User-Agent": "PostmanRuntime/7.37.3",
+        },
+      });
+      console.log(response, ">>> response controller");
+      res.status(200).json(response.data.items);
+    } catch (error) {
+      console.log("error data:", error.message);
+      res.status(500).json({ error: error });
     }
-    res
-      .status(429)
-      .json({ error: "Too many requests. Please try again later." });
   }
 
   static async searchingImages(req, res) {
     try {
       const { tags } = req.query;
-      const apiKey = process.env.FLICKR_API_KEY;
-      const url = `https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=${apiKey}&tags=${tags}&format=json&nojsoncallback=1`;
 
-      const response = await axios.get(url);
+      if (!tags) {
+        return res.status(400).json({ message: "Tags are required" });
+      }
+
+      const url = `https://api.flickr.com/services/feeds/photos_public.gne?tags=${tags}&format=json&nojsoncallback=1`;
+
+      const response = await axios.get(url, {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "User-Agent": "PostmanRuntime/7.37.3",
+        },
+      });
+
       console.log("searching >>>", tags);
-      console.log("hasil searching >>", response.data.photos.photo);
-      res.status(200).json(response.data.photos.photo);
+      console.log("hasil searching >>", response.data.items);
+      res.status(200).json(response.data.items);
     } catch (error) {
       console.log("error searching photos:", error.message);
-      res.status(500).json({ message: "error searching photos" });
+      res.status(500).json({ message: "Error searching photos", error: error.message });
     }
   }
 }
